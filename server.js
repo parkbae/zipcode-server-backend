@@ -97,27 +97,36 @@ app.use((req, res) => {
 // Start server
 const server = app.listen(PORT, '0.0.0.0', () => {
     console.log('SERVER READY ON PORT ' + PORT);
-    // *** 헷갈리는 로그 메시지 제거 ***
-    // console.log('Health: GET /'); 
 });
 
 // Keep alive
-// *** BUG FIX: Store interval in a variable ***
 const keepAliveInterval = setInterval(() => {
     console.log('Server alive: ' + new Date().toISOString());
 }, 30000);
 
-// Graceful shutdown
+// *** v7: 더 강력한 Graceful Shutdown ***
 function gracefulShutdown(signal) {
-    console.log(`${signal} received`);
+    console.log(`${signal} received. Stopping keep-alive.`);
     
-    // *** BUG FIX: Clear the interval ***
+    // 1. 인터벌을 즉시 중지합니다.
     clearInterval(keepAliveInterval);
     
-    server.close(() => {
-        console.log('Server closed gracefully');
-        process.exit(0);
+    console.log('Closing server...');
+    // 2. 서버를 닫습니다.
+    server.close((err) => {
+        if (err) {
+            console.error('Error closing server:', err);
+            process.exit(1); // 오류가 있으면 1번 코드로 종료
+        }
+        console.log('Server closed gracefully. Exiting process.');
+        process.exit(0); // 성공하면 0번 코드로 종료
     });
+
+    // 3. 만약 5초 안에 서버가 닫히지 않으면 강제 종료합니다.
+    setTimeout(() => {
+        console.error('Could not close connections in time, forcing shutdown');
+        process.exit(1);
+    }, 5000);
 }
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
