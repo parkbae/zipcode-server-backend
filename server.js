@@ -1,4 +1,4 @@
-// server.js (최종 CORS 수정본)
+// server.js (CORS 수정 최종본)
 
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -94,3 +94,4 @@ app.post('/api/upload-rules', (req, res) => {
 app.listen(PORT, '0.0.0.0', () => { 
     console.log(`✅ 서버가 포트 ${PORT} 에서 실행 중입니다.`);
 });
+
