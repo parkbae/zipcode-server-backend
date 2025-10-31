@@ -1,4 +1,4 @@
-// server.js (Railway 헬스 체크 포함 최종본)
+// server.js (Railway Production Ready)
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -8,21 +8,21 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 규칙을 저장할 파일 경로
+// Rules file path
 const RULES_FILE = path.join(__dirname, 'managementRules.json');
 
-// CORS 설정: 모든 도메인 허용
+// CORS: Allow all origins
 app.use(cors());
 
-// 미들웨어 설정
+// Middleware
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.text({ limit: '50mb' }));
 
-// === Railway 헬스 체크 엔드포인트 ===
+// === Health Check Endpoints ===
 app.get('/', (req, res) => {
     res.status(200).json({
         status: 'OK',
-        message: '우편번호 분류 서버가 정상 작동 중입니다.',
+        message: 'Zipcode Classification Server is running',
         timestamp: new Date().toISOString()
     });
 });
@@ -34,7 +34,7 @@ app.get('/health', (req, res) => {
     });
 });
 
-// === 1. 규칙 조회 API ===
+// === 1. Get Rules API ===
 app.get('/api/rules', (req, res) => {
     try {
         if (fs.existsSync(RULES_FILE)) {
@@ -44,14 +44,14 @@ app.get('/api/rules', (req, res) => {
             res.status(200).json({});
         }
     } catch (error) {
-        console.error('규칙 조회 오류:', error);
+        console.error('Error loading rules:', error);
         res.status(500).json({ 
-            error: '규칙을 불러오는 중 서버 오류가 발생했습니다.' 
+            error: 'Server error while loading rules' 
         });
     }
 });
 
-// === 2. 규칙 저장 API ===
+// === 2. Upload Rules API ===
 app.post('/api/upload-rules', (req, res) => {
     try {
         const rulesContent = req.body;
@@ -75,10 +75,10 @@ app.post('/api/upload-rules', (req, res) => {
                 let zip = parts[0].trim();
                 let status = parts[1].trim();
 
-                // 하이픈(-) 제거
+                // Remove hyphens
                 const cleanZip = zip.replace(/-/g, '');
 
-                // 5자리 또는 6자리 숫자 확인
+                // Validate 5 or 6 digit zipcode
                 if (/^(\d{5}|\d{6})$/.test(cleanZip) && status.length > 0) {
                     managementRules[cleanZip] = status;
                     count++;
@@ -86,39 +86,39 @@ app.post('/api/upload-rules', (req, res) => {
             }
         });
 
-        // JSON 파일로 저장
+        // Save to JSON file
         fs.writeFileSync(RULES_FILE, JSON.stringify(managementRules, null, 2), 'utf8');
         
-        console.log(`✅ 규칙 ${count}개 저장 완료`);
+        console.log(`Rules saved: ${count} entries`);
         
         res.status(200).json({
             success: true,
-            message: '규칙이 성공적으로 서버에 저장되었습니다.',
+            message: 'Rules successfully saved to server',
             loadedCount: count
         });
     } catch (error) {
-        console.error('❌ 규칙 저장 오류:', error);
+        console.error('Error saving rules:', error);
         res.status(500).json({ 
-            error: '규칙 저장 중 서버 오류가 발생했습니다.',
+            error: 'Server error while saving rules',
             details: error.message
         });
     }
 });
 
-// 404 핸들러
+// 404 Handler
 app.use((req, res) => {
     res.status(404).json({ 
-        error: '요청한 엔드포인트를 찾을 수 없습니다.',
+        error: 'Endpoint not found',
         path: req.path
     });
 });
 
-// 서버 시작
+// Start Server
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ 서버가 포트 ${PORT}에서 실행 중입니다.`);
-    console.log(`   Railway URL: https://zipcode-server-backend-production.up.railway.app`);
-    console.log(`   헬스 체크: GET /`);
-    console.log(`   API 엔드포인트:`);
-    console.log(`     - GET  /api/rules`);
-    console.log(`     - POST /api/upload-rules`);
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Railway URL: https://zipcode-server-backend-production.up.railway.app`);
+    console.log(`Health check: GET /`);
+    console.log(`API endpoints:`);
+    console.log(`  - GET  /api/rules`);
+    console.log(`  - POST /api/upload-rules`);
 });
