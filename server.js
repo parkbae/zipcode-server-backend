@@ -1,4 +1,4 @@
-// server.js (Railway - Healthcheck Fixed)
+// server.js (Railway - Healthcheck Fixed & Graceful Shutdown)
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -48,7 +48,6 @@ app.post('/api/upload-rules', (req, res) => {
         const rulesContent = req.body;
         let managementRules = {};
         let count = 0;
-
         const lines = rulesContent.split(/\r?\n/);
 
         lines.forEach(line => {
@@ -65,6 +64,7 @@ app.post('/api/upload-rules', (req, res) => {
             if (parts.length >= 2) {
                 let zip = parts[0].trim();
                 let status = parts[1].trim();
+                
                 const cleanZip = zip.replace(/-/g, '');
 
                 if (/^(\d{5}|\d{6})$/.test(cleanZip) && status.length > 0) {
@@ -76,12 +76,13 @@ app.post('/api/upload-rules', (req, res) => {
 
         fs.writeFileSync(RULES_FILE, JSON.stringify(managementRules, null, 2), 'utf8');
         console.log('Rules saved: ' + count + ' entries');
-        
+                
         res.status(200).json({
             success: true,
             message: 'Rules saved',
             loadedCount: count
         });
+
     } catch (error) {
         console.error('Error saving rules:', error);
         res.status(500).json({ error: 'Server error' });
@@ -100,23 +101,24 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 });
 
 // Keep alive
-setInterval(() => {
+// *** BUG FIX: Store interval in a variable ***
+const keepAliveInterval = setInterval(() => {
     console.log('Server alive: ' + new Date().toISOString());
 }, 30000);
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-    console.log('SIGTERM received');
+function gracefulShutdown(signal) {
+    console.log(`${signal} received`);
+    
+    // *** BUG FIX: Clear the interval ***
+    clearInterval(keepAliveInterval);
+    
     server.close(() => {
         console.log('Server closed gracefully');
         process.exit(0);
     });
-});
+}
 
-process.on('SIGINT', () => {
-    console.log('SIGINT received');
-    server.close(() => {
-        console.log('Server closed gracefully');
-        process.exit(0);
-    });
-});
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
