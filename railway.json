@@ -11,28 +11,3 @@
     "restartPolicyMaxRetries": 10
   }
 }
-```
-
-5. **Commit new file** 클릭
-
-**완료!**
-
----
-
-### 4단계: server.js 파일 수정하기
-
-1. GitHub 저장소에서 **server.js** 파일 클릭
-2. 오른쪽 위 **연필 아이콘** (Edit this file) 클릭
-3. 기존 내용 **전체 삭제**
-4. 제가 위에서 준 새로운 server.js 내용 복사-붙여넣기 (아래 다시 첨부)
-5. 화면 맨 아래 **Commit changes** 클릭
-
----
-
-## 최종 확인: GitHub 저장소에 있어야 할 파일들
-```
-zipcode-server-backend/
-├── server.js          ← 수정됨
-├── package.json       ← 기존 파일
-├── Procfile          ← 새로 추가!
-└── railway.json      ← 새로 추가!
