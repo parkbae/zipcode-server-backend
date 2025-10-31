@@ -97,7 +97,8 @@ app.use((req, res) => {
 // Start server
 const server = app.listen(PORT, '0.0.0.0', () => {
     console.log('SERVER READY ON PORT ' + PORT);
-    console.log('Health: GET /');
+    // *** 헷갈리는 로그 메시지 제거 ***
+    // console.log('Health: GET /'); 
 });
 
 // Keep alive
