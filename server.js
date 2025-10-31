@@ -1,4 +1,4 @@
-// server.js
+// server.js (최종 단순화 버전 + 버그 수정)
 
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -7,24 +7,24 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-const PORT = 3000;
+// ✅ 1. Railway 자동 할당 포트 사용
+const PORT = process.env.PORT || 3000; 
 
-// 규칙을 저장할 파일 경로 (서버가 영구적으로 보관할 파일입니다.)
+// 규칙을 저장할 파일 경로
 const RULES_FILE = path.join(__dirname, 'managementRules.json');
 
 // 미들웨어 설정
-app.use(cors()); // 프론트엔드(HTML 파일)의 요청을 허용합니다.
-app.use(bodyParser.json({ limit: '50mb' })); // JSON 형식 요청 본문 파싱
-app.use(bodyParser.text({ limit: '50mb' })); // 텍스트 형식 요청 본문 파싱
+app.use(cors()); 
+app.use(bodyParser.json({ limit: '50mb' })); 
+app.use(bodyParser.text({ limit: '50mb' })); 
 
-// --- 1. 규칙 조회 API (게스트 및 관리자가 규칙을 불러올 때 사용) ---
+// --- 1. 규칙 조회 API ---
 app.get('/api/rules', (req, res) => {
     try {
         if (fs.existsSync(RULES_FILE)) {
             const rulesData = fs.readFileSync(RULES_FILE, 'utf8');
             res.status(200).json(JSON.parse(rulesData));
         } else {
-            // 파일이 없으면 빈 객체를 반환 (규칙이 없는 상태)
             res.status(200).json({});
         }
     } catch (error) {
@@ -33,16 +33,15 @@ app.get('/api/rules', (req, res) => {
     }
 });
 
-// --- 2. 규칙 저장 API (관리자가 파일 업로드 시 사용) ---
+// --- 2. 규칙 저장 API (🚨 비밀 키 인증 없음) ---
 app.post('/api/upload-rules', (req, res) => {
-    // 프론트엔드에서 보낸 규칙 텍스트 전체를 받습니다.
-    const rulesContent = req.body; 
+    // 🚨 사용자 요청대로 비밀 키 검증 로직(EXPECTED_KEY)을 *완전히 제거*했습니다.
+    // 🚨 '관리자'로 로그인한 사람은 누구나 업로드할 수 있습니다.
 
-    // 클라이언트에서 하던 파일 분석(parseRules) 로직을 서버에서 다시 합니다.
+    const rulesContent = req.body; 
     let managementRules = {};
     let count = 0;
     
-    // 줄바꿈 문자로 분리
     const lines = rulesContent.split(/\r?\n/);
 
     lines.forEach(line => {
@@ -57,19 +56,22 @@ app.post('/api/upload-rules', (req, res) => {
         }
         
         if (parts.length >= 2) {
-            const zip = parts[0].trim();
-            const status = parts[1].trim();
+            let zip = parts[0].trim(); 
+            let status = parts[1].trim();
             
-            // 5자리 또는 6자리 숫자 우편번호 확인
-            if (/^(\d{5}|\d{6})$/.test(zip) && status.length > 0) {
-                managementRules[zip] = status;
+            // ✅ 2. 하이픈(-) 제거 로직
+            const cleanZip = zip.replace(/-/g, ''); 
+            
+            // 5자리 또는 6자리 숫자 확인
+            if (/^(\d{5}|\d{6})$/.test(cleanZip) && status.length > 0) {
+                managementRules[cleanZip] = status;
                 count++;
             }
         }
     });
 
     try {
-        // 규칙을 JSON 문자열로 변환하여 파일에 영구 저장합니다. (이 파일이 데이터베이스 역할)
+        // 규칙을 JSON 문자열로 변환하여 파일에 영구 저장
         fs.writeFileSync(RULES_FILE, JSON.stringify(managementRules, null, 2), 'utf8');
         res.status(200).json({ 
             message: '규칙이 성공적으로 서버에 저장되었습니다.', 
@@ -82,6 +84,7 @@ app.post('/api/upload-rules', (req, res) => {
 });
 
 // 서버 시작
-app.listen(PORT, () => {
-    console.log(`✅ 서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
+// ✅ 3. Railway 접속을 위한 0.0.0.0 바인딩
+app.listen(PORT, '0.0.0.0', () => { 
+    console.log(`✅ 서버가 포트 ${PORT} 에서 실행 중입니다.`);
 });
