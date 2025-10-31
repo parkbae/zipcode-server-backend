@@ -1,4 +1,4 @@
-// server.js (Railway Production Ready)
+// server.js (Railway Production Ready - Fixed)
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -18,23 +18,16 @@ app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.text({ limit: '50mb' }));
 
-// === Health Check Endpoints ===
+// === CRITICAL: Health Check Endpoints (Must be FIRST) ===
 app.get('/', (req, res) => {
-    res.status(200).json({
-        status: 'OK',
-        message: 'Zipcode Classification Server is running',
-        timestamp: new Date().toISOString()
-    });
+    res.status(200).send('OK');
 });
 
 app.get('/health', (req, res) => {
-    res.status(200).json({ 
-        status: 'healthy',
-        uptime: process.uptime()
-    });
+    res.status(200).json({ status: 'healthy' });
 });
 
-// === 1. Get Rules API ===
+// === API Endpoints ===
 app.get('/api/rules', (req, res) => {
     try {
         if (fs.existsSync(RULES_FILE)) {
@@ -45,13 +38,10 @@ app.get('/api/rules', (req, res) => {
         }
     } catch (error) {
         console.error('Error loading rules:', error);
-        res.status(500).json({ 
-            error: 'Server error while loading rules' 
-        });
+        res.status(500).json({ error: 'Server error' });
     }
 });
 
-// === 2. Upload Rules API ===
 app.post('/api/upload-rules', (req, res) => {
     try {
         const rulesContent = req.body;
@@ -74,11 +64,8 @@ app.post('/api/upload-rules', (req, res) => {
             if (parts.length >= 2) {
                 let zip = parts[0].trim();
                 let status = parts[1].trim();
-
-                // Remove hyphens
                 const cleanZip = zip.replace(/-/g, '');
 
-                // Validate 5 or 6 digit zipcode
                 if (/^(\d{5}|\d{6})$/.test(cleanZip) && status.length > 0) {
                     managementRules[cleanZip] = status;
                     count++;
@@ -86,39 +73,35 @@ app.post('/api/upload-rules', (req, res) => {
             }
         });
 
-        // Save to JSON file
         fs.writeFileSync(RULES_FILE, JSON.stringify(managementRules, null, 2), 'utf8');
-        
-        console.log(`Rules saved: ${count} entries`);
+        console.log('Rules saved: ' + count + ' entries');
         
         res.status(200).json({
             success: true,
-            message: 'Rules successfully saved to server',
+            message: 'Rules saved',
             loadedCount: count
         });
     } catch (error) {
         console.error('Error saving rules:', error);
-        res.status(500).json({ 
-            error: 'Server error while saving rules',
-            details: error.message
-        });
+        res.status(500).json({ error: 'Server error' });
     }
 });
 
 // 404 Handler
 app.use((req, res) => {
-    res.status(404).json({ 
-        error: 'Endpoint not found',
-        path: req.path
-    });
+    res.status(404).json({ error: 'Not found' });
 });
 
-// Start Server
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Railway URL: https://zipcode-server-backend-production.up.railway.app`);
-    console.log(`Health check: GET /`);
-    console.log(`API endpoints:`);
-    console.log(`  - GET  /api/rules`);
-    console.log(`  - POST /api/upload-rules`);
+// Start Server - CRITICAL: Must use callback
+const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log('Server started on port ' + PORT);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('SIGTERM received, closing server...');
+    server.close(() => {
+        console.log('Server closed');
+        process.exit(0);
+    });
 });
