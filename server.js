@@ -1,4 +1,4 @@
-// server.js (Railway Production Ready - Fixed)
+// server.js (Railway - Healthcheck Fixed)
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -7,27 +7,27 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// Rules file path
 const RULES_FILE = path.join(__dirname, 'managementRules.json');
 
-// CORS: Allow all origins
+// CORS
 app.use(cors());
 
 // Middleware
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.text({ limit: '50mb' }));
 
-// === CRITICAL: Health Check Endpoints (Must be FIRST) ===
+// CRITICAL: Simple health check that responds immediately
 app.get('/', (req, res) => {
-    res.status(200).send('OK');
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('OK');
 });
 
 app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'healthy' });
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('OK');
 });
 
-// === API Endpoints ===
+// API: Get rules
 app.get('/api/rules', (req, res) => {
     try {
         if (fs.existsSync(RULES_FILE)) {
@@ -42,6 +42,7 @@ app.get('/api/rules', (req, res) => {
     }
 });
 
+// API: Upload rules
 app.post('/api/upload-rules', (req, res) => {
     try {
         const rulesContent = req.body;
@@ -87,21 +88,35 @@ app.post('/api/upload-rules', (req, res) => {
     }
 });
 
-// 404 Handler
+// 404
 app.use((req, res) => {
     res.status(404).json({ error: 'Not found' });
 });
 
-// Start Server - CRITICAL: Must use callback
+// Start server
 const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log('Server started on port ' + PORT);
+    console.log('SERVER READY ON PORT ' + PORT);
+    console.log('Health: GET /');
 });
+
+// Keep alive
+setInterval(() => {
+    console.log('Server alive: ' + new Date().toISOString());
+}, 30000);
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-    console.log('SIGTERM received, closing server...');
+    console.log('SIGTERM received');
     server.close(() => {
-        console.log('Server closed');
+        console.log('Server closed gracefully');
+        process.exit(0);
+    });
+});
+
+process.on('SIGINT', () => {
+    console.log('SIGINT received');
+    server.close(() => {
+        console.log('Server closed gracefully');
         process.exit(0);
     });
 });
