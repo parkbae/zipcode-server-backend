@@ -1,4 +1,4 @@
-// server.js (CORS 수정 최종본)
+// server.js (최종 CORS 수정본)
 
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -7,17 +7,17 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-// ✅ 1. Railway 자동 할당 포트 사용 (수정됨)
+// ✅ 1. Railway 자동 할당 포트 사용
 const PORT = process.env.PORT || 3000; 
 
 // 규칙을 저장할 파일 경로
 const RULES_FILE = path.join(__dirname, 'managementRules.json');
 
 // ✅ --- 2. CORS 설정 수정 ---
-// Netlify 사이트의 주소를 명시적으로 허용합니다.
-// 이 코드가 'Failed to fetch' 오류를 해결합니다.
+// 1단계에서 만든 새 Netlify 주소를 허용합니다.
 const corsOptions = {
-  origin: 'https://exquisite-gaufre-230cc6.netlify.app',
+  // ✅ 새로운 Netlify 주소(bucolic-pie-788fb0.netlify.app)를 반영했습니다.
+  origin: 'https://bucolic-pie-788fb0.netlify.app',
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
@@ -65,7 +65,7 @@ app.post('/api/upload-rules', (req, res) => {
             let zip = parts[0].trim(); 
             let status = parts[1].trim();
             
-            // ✅ 3. 하이픈(-) 제거 로직 (수정됨)
+            // ✅ 3. 하이픈(-) 제거 로직
             const cleanZip = zip.replace(/-/g, ''); 
             
             // 5자리 또는 6자리 숫자 확인
@@ -90,7 +90,7 @@ app.post('/api/upload-rules', (req, res) => {
 });
 
 // 서버 시작
-// ✅ 1. Railway 접속을 위한 0.0.0.0 바인딩 (수정됨)
+// ✅ 1. Railway 접속을 위한 0.0.0.0 바인딩
 app.listen(PORT, '0.0.0.0', () => { 
     console.log(`✅ 서버가 포트 ${PORT} 에서 실행 중입니다.`);
 });
