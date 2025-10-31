@@ -1,4 +1,4 @@
-// server.js (최종 CORS 수정본)
+// server.js (CORS "모두 허용" 최종본)
 
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -13,14 +13,9 @@ const PORT = process.env.PORT || 3000;
 // 규칙을 저장할 파일 경로
 const RULES_FILE = path.join(__dirname, 'managementRules.json');
 
-// ✅ --- 2. CORS 설정 수정 ---
-// 1단계에서 만든 새 Netlify 주소를 허용합니다.
-const corsOptions = {
-  // ✅ 새로운 Netlify 주소(bucolic-pie-788fb0.netlify.app)를 반영했습니다.
-  origin: 'https://bucolic-pie-788fb0.netlify.app',
-  optionsSuccessStatus: 200
-};
-app.use(cors(corsOptions));
+// ✅ --- 2. CORS 설정 수정 (모두 허용) ---
+// "Failed to fetch" 오류를 해결하기 위해 모든 도메인의 요청을 허용합니다.
+app.use(cors());
 // --- CORS 설정 끝 ---
 
 // 미들웨어 설정
