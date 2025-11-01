@@ -6,11 +6,12 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+// 💥 Render.com 기본 포트는 10000입니다. (기존 3000에서 변경)
+const PORT = process.env.PORT || 10000;
 
 // --- [새 로직 1] 규칙 파일 경로 및 메모리 변수 ---
-// 💥 중요: '관리지역.txt' 파일이 server.js와 같은 위치에 있어야 합니다.
-const TXT_RULES_FILE = path.join(__dirname, '관리지역.txt');
+// 💥 중요: 한글 파일명('관리지역.txt') -> 영어('rules.txt')로 변경
+const TXT_RULES_FILE = path.join(__dirname, 'rules.txt');
 let managementRules = {}; // 규칙을 메모리에 저장할 변수
 
 // --- CORS 및 Middleware (기존과 동일) ---
@@ -24,6 +25,7 @@ function parseRules(content) {
     const rules = {};
     let count = 0;
 
+    // BOM (Byte Order Mark) 제거
     if (content.charCodeAt(0) === 0xFEFF) {
         content = content.substring(1);
     }
@@ -60,15 +62,15 @@ function parseRules(content) {
     return rules;
 }
 
-// --- [새 로직 3] 서버 시작 시 '관리지역.txt' 파일을 읽어 메모리에 저장 ---
+// --- [새 로직 3] 서버 시작 시 'rules.txt' 파일을 읽어 메모리에 저장 ---
 try {
     console.log(`[규칙 로드 시작] '${TXT_RULES_FILE}' 파일 읽기를 시도합니다...`);
-    // 💥 중요: '관리지역.txt' 파일 인코딩이 'utf-8'이 아니라면 'euc-kr' 등으로 변경
-    const fileContent = fs.readFileSync(TXT_RULES_FILE, 'utf-8');
+    // 💥 중요: 'utf-8' -> 'euc-kr'로 인코딩 변경
+    const fileContent = fs.readFileSync(TXT_RULES_FILE, 'euc-kr'); 
     managementRules = parseRules(fileContent);
 } catch (err) {
     console.error(`[치명적 오류] '${TXT_RULES_FILE}' 파일 로드 실패!`, err.message);
-    console.error("서버가 빈 규칙으로 시작합니다. '관리지역.txt' 파일이 정확한 위치에 있는지, 인코딩은 맞는지 확인하세요.");
+    console.error("서버가 빈 규칙으로 시작합니다. 'rules.txt' 파일이 정확한 위치에 있는지, 인코딩은 'euc-kr'이 맞는지 확인하세요.");
     managementRules = {}; // 실패 시 빈 객체로 시작
 }
 
@@ -102,7 +104,7 @@ app.post('/api/upload-rules', (req, res) => {
         const rulesContent = req.body; // text
         
         // 💥 수정: 텍스트를 파싱해서 '전역 변수'에 덮어쓰기
-        managementRules = parseRules(rulesContent);
+        managementRules = parseRules(rulesContent); 
         
         const count = Object.keys(managementRules).length;
 
@@ -130,7 +132,8 @@ app.use((req, res) => {
 
 // --- 서버 시작 (기존과 동일) ---
 const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log('SERVER READY ON PORT ' + PORT);
+    // 💥 Render.com 포트(10000)로 로그 수정
+    console.log(`SERVER READY ON PORT ${PORT}`);
 });
 
 // --- Keep alive (기존과 동일) ---
@@ -165,3 +168,4 @@ function gracefulShutdown(signal) {
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
