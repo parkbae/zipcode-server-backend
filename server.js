@@ -65,12 +65,12 @@ function parseRules(content) {
 // --- [새 로직 3] 서버 시작 시 'rules.txt' 파일을 읽어 메모리에 저장 ---
 try {
     console.log(`[규칙 로드 시작] '${TXT_RULES_FILE}' 파일 읽기를 시도합니다...`);
-    // 💥 중요: 'utf-8' -> 'euc-kr'로 인코딩 변경
-    const fileContent = fs.readFileSync(TXT_RULES_FILE, 'euc-kr'); 
+    // 💥 중요: 'euc-kr' -> 'utf-8'로 인코딩 최종 변경
+    const fileContent = fs.readFileSync(TXT_RULES_FILE, 'utf-8'); 
     managementRules = parseRules(fileContent);
 } catch (err) {
     console.error(`[치명적 오류] '${TXT_RULES_FILE}' 파일 로드 실패!`, err.message);
-    console.error("서버가 빈 규칙으로 시작합니다. 'rules.txt' 파일이 정확한 위치에 있는지, 인코딩은 'euc-kr'이 맞는지 확인하세요.");
+    console.error("서버가 빈 규칙으로 시작합니다. 'rules.txt' 파일이 정확한 위치에 있는지, 인코딩은 'utf-8'이 맞는지 확인하세요.");
     managementRules = {}; // 실패 시 빈 객체로 시작
 }
 
